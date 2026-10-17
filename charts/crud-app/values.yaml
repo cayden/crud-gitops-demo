@@ -32,9 +32,12 @@ frontend:
   replicas: 2
   port: 80
   service:
-    type: ClusterIP
-    # 当 type=NodePort 时生效，留空则由集群分配
-    nodePort: ""
+    # NodePort 让前端能从集群外直接访问，不依赖 kubectl port-forward
+    # kind 集群已把节点端口 30080 映射到宿主机 8081（见 kind-config.yaml）
+    type: NodePort
+    # 当 type=NodePort 时生效；留空则由集群在 30000-32767 随机分配
+    # 注意：kind 只映射了 30080 这一个端口，用到别的端口宿主机访问不到
+    nodePort: 30080
   resources:
     requests:
       cpu: 20m
