@@ -154,6 +154,12 @@ make load        # 导入 kind 节点（CLUSTER=argocd-demo）
 make deploy      # helm upgrade --install crud charts/crud-app -n crud-demo
 make verify      # 端到端验证 CRUD
 
+# 前端通过 NodePort 30080 暴露（values.yaml 里 frontend.service.nodePort）
+# kind 集群已把节点端口 30080 映射到宿主机 8081，浏览器直接打开：
+#   http://localhost:8081
+# 非 kind 集群用节点 IP 访问：http://<nodeIP>:30080
+#
+# 临时访问也可以继续用 port-forward：
 kubectl -n crud-demo port-forward svc/crud-frontend 8082:80
 # → http://localhost:8082
 ```
@@ -195,6 +201,20 @@ NAMESPACE=prod-app ./install.sh     # 指定命名空间
 ./install.sh --uninstall            # 卸载（保留 PVC）
 ```
 
+安装完 `install.sh` 会打印前端访问方式。离线包里的前端默认是 **ClusterIP**
+（避免装到已有 NodePort 30080 的集群上冲突），对外暴露有两种方式：
+
+```bash
+# 方式一：装完改成 NodePort
+kubectl -n crud-demo patch svc crud-frontend -p '{"spec":{"type":"NodePort"}}'
+
+# 方式二：打包时就渲染成 NodePort（换端口避免冲突）
+FRONTEND_SERVICE_TYPE=NodePort NODEPORT=30081 bash cd/package-offline.sh
+
+# 方式三：临时 port-forward
+kubectl -n crud-demo port-forward svc/crud-frontend 8082:80
+```
+
 离线包内容：
 
 ```
@@ -216,11 +236,12 @@ crud-app-offline-v1/
 | `fullnameOverride` | `crud` | 资源名前缀，决定 svc 名称 |
 | `imagePullPolicy` | `IfNotPresent` | 本地导入镜像必须用它 |
 | `backend.image.repository/tag` | `crud-backend` / `v1` | 后端镜像 |
-| `backend.replicas` | `2` | 后端副本数 |
+| `backend.replicas` | `3` | 后端副本数（GitOps 演示时从 2 扩到 3） |
 | `backend.env.seed` | `true` | 首次启动写入演示数据 |
 | `frontend.image.repository/tag` | `crud-frontend` / `v1` | 前端镜像 |
 | `frontend.replicas` | `2` | 前端副本数 |
-| `frontend.service.type` | `ClusterIP` | 可改 `NodePort` |
+| `frontend.service.type` | `NodePort` | 本机 demo 用 NodePort 直连；离线包默认渲染成 `ClusterIP` |
+| `frontend.service.nodePort` | `30080` | kind 只映射了 30080 这一个端口 |
 | `mysql.image.repository/tag` | `mysql` / `8.0.36` | 数据库镜像 |
 | `mysql.auth.rootPassword` | `root123456` | root 口令 |
 | `mysql.auth.username/password` | `crud` / `crud123456` | 业务账号 |

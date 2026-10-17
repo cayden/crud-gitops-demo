@@ -88,13 +88,40 @@ echo
 kubectl -n "${NAMESPACE}" get pods -l app.kubernetes.io/part-of=crud-app -o wide 2>/dev/null \
   || kubectl -n "${NAMESPACE}" get pods
 
+FRONTEND_TYPE="$(kubectl -n "${NAMESPACE}" get svc "${RELEASE_NAME}-frontend" \
+  -o jsonpath='{.spec.type}' 2>/dev/null || echo unknown)"
+
 cat <<EOF
 
 安装完成 ✅
 
-访问前端：
+前端 Service 类型：${FRONTEND_TYPE}
+EOF
+
+if [ "${FRONTEND_TYPE}" = "NodePort" ]; then
+  NODEPORT="$(kubectl -n "${NAMESPACE}" get svc "${RELEASE_NAME}-frontend" \
+    -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo '')"
+  NODEIP="$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null || echo '<节点IP>')"
+  cat <<EOF
+直接访问（NodePort ${NODEPORT}）：
+  http://${NODEIP}:${NODEPORT}
+  集群在 Docker 里（kind）时，需先给节点做端口映射，否则用下面的 port-forward
+EOF
+else
+  cat <<EOF
+从集群外访问（ClusterIP 需要转发）：
   kubectl -n ${NAMESPACE} port-forward svc/${RELEASE_NAME}-frontend 8082:80
   → http://localhost:8082
+
+想长期对外暴露，执行其一即可：
+  # 1) 改成 NodePort（集群节点 IP 可直连）
+  kubectl -n ${NAMESPACE} patch svc ${RELEASE_NAME}-frontend \\
+    -p '{"spec":{"type":"NodePort"}}'
+  # 2) 用 Ingress / Gateway 接入现有入口
+EOF
+fi
+
+cat <<EOF
 
 验证 API：
   kubectl -n ${NAMESPACE} port-forward svc/${RELEASE_NAME}-backend 8090:8080

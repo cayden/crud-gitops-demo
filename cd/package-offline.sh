@@ -25,8 +25,15 @@ rm -rf "${STAGE}"
 mkdir -p "${STAGE}/images" "${STAGE}/manifests" "${STAGE}/charts"
 
 echo "==> 渲染 manifests（kubectl apply 即可安装，无需 helm）"
+# 离线包默认渲染成 ClusterIP：装到任何集群都不会与已有 NodePort 冲突
+# 需要直接对外暴露时用 FRONTEND_SERVICE_TYPE=NodePort NODEPORT=30081 重新打包
+SET_ARGS=(--set "frontend.service.type=${FRONTEND_SERVICE_TYPE:-ClusterIP}")
+if [ -n "${NODEPORT:-}" ]; then
+  SET_ARGS+=(--set "frontend.service.nodePort=${NODEPORT}")
+fi
 "${HELM}" template "${RELEASE}" "${ROOT}/charts/crud-app" \
-  --namespace "${NAMESPACE}" > "${STAGE}/manifests/all.yaml"
+  --namespace "${NAMESPACE}" "${SET_ARGS[@]}" > "${STAGE}/manifests/all.yaml"
+echo "    前端 Service 类型: ${FRONTEND_SERVICE_TYPE:-ClusterIP}"
 echo "    $(grep -c '^kind:' "${STAGE}/manifests/all.yaml") 个资源"
 
 echo "==> 打包 Helm chart"
