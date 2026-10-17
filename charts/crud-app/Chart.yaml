@@ -1,0 +1,14 @@
+apiVersion: v2
+name: crud-app
+description: Go + Vue 3 + MySQL 增删改查演示应用，支持 Helm / ArgoCD / 离线部署
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - golang
+  - vue
+  - mysql
+  - crud
+  - gitops
+maintainers:
+  - name: demo

@@ -1,0 +1,22 @@
+{{- if .Values.mysql.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "crud-app.fullname" . }}-mysql
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "crud-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+  annotations:
+    # 卸载时保留数据卷，避免 helm uninstall 误删数据库
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - {{ .Values.mysql.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.mysql.persistence.size }}
+  {{- if .Values.mysql.persistence.storageClass }}
+  storageClassName: {{ .Values.mysql.persistence.storageClass }}
+  {{- end }}
+{{- end }}

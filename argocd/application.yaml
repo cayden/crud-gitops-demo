@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: crud-app
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: crud-app
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/cayden/crud-gitops-demo.git
+    targetRevision: main
+    path: charts/crud-app
+    helm:
+      releaseName: crud
+      valueFiles:
+        - values.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: crud-demo
+
+  syncPolicy:
+    automated:
+      prune: true      # Git 中删除的资源，集群中同步删除
+      selfHeal: true   # 集群被手工改动时自动拉回 Git 状态
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+      - ServerSideApply=false
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m

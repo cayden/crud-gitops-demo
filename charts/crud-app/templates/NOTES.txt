@@ -1,0 +1,28 @@
+{{- $fullname := include "crud-app.fullname" . -}}
+{{- $ns := .Release.Namespace -}}
+Release {{ .Release.Name }} 已安装到命名空间 {{ $ns }}
+Chart: {{ include "crud-app.chart" . }}
+
+组件：
+  backend   {{ $fullname }}-backend   (ClusterIP :{{ .Values.backend.port }}，{{ .Values.backend.replicas }} 副本)
+  frontend  {{ $fullname }}-frontend  ({{ .Values.frontend.service.type }} :{{ .Values.frontend.port }}，{{ .Values.frontend.replicas }} 副本)
+  mysql     {{ $fullname }}-mysql     (ClusterIP :3306)
+
+访问前端：
+
+  kubectl -n {{ $ns }} port-forward svc/{{ $fullname }}-frontend 8082:{{ .Values.frontend.port }}
+  然后浏览器打开 http://localhost:8082
+
+直接验证后端 API：
+
+  kubectl -n {{ $ns }} port-forward svc/{{ $fullname }}-backend 8090:{{ .Values.backend.port }}
+  curl -s http://localhost:8090/api/items
+
+查看数据库：
+
+  kubectl -n {{ $ns }} exec -it deploy/{{ $fullname }}-mysql -- \
+    mysql -u{{ .Values.mysql.auth.username }} -p{{ .Values.mysql.auth.password }} {{ .Values.mysql.auth.database }} -e "select * from items;"
+
+卸载（PVC 因 resource-policy: keep 会保留）：
+
+  helm uninstall {{ .Release.Name }} -n {{ $ns }}

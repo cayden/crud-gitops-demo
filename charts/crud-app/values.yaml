@@ -1,0 +1,79 @@
+# 默认值：本地 kind 集群 / 离线部署可直接使用
+# 资源名前缀固定为 crud，方便离线包里的 manifests 与文档引用
+nameOverride: ""
+fullnameOverride: "crud"
+
+# 镜像拉取策略：本地导入镜像的集群必须用 IfNotPresent
+imagePullPolicy: IfNotPresent
+
+backend:
+  image:
+    repository: crud-backend
+    tag: v1
+  replicas: 2
+  port: 8080
+  env:
+    dbName: crud
+    dbUser: crud
+    # 首次启动是否插入演示数据
+    seed: "true"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+frontend:
+  image:
+    repository: crud-frontend
+    tag: v1
+  replicas: 2
+  port: 80
+  service:
+    type: ClusterIP
+    # 当 type=NodePort 时生效，留空则由集群分配
+    nodePort: ""
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+mysql:
+  image:
+    repository: mysql
+    tag: 8.0.36
+  auth:
+    # 演示用默认口令；生产请用 existingSecret 或 --set 覆盖
+    rootPassword: root123456
+    username: crud
+    password: crud123456
+    database: crud
+    # 指定已有 Secret 名称（需含 mysql-root-password / mysql-password 两个 key），设置后 chart 不再创建 Secret
+    existingSecret: ""
+  persistence:
+    enabled: true
+    size: 2Gi
+    # 留空使用集群默认 StorageClass
+    storageClass: ""
+    accessMode: ReadWriteOnce
+  args:
+    - --character-set-server=utf8mb4
+    - --collation-server=utf8mb4_unicode_ci
+    - --default-authentication-plugin=caching_sha2_password
+  resources:
+    requests:
+      cpu: 100m
+      memory: 320Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# 全局调度配置
+nodeSelector: {}
+tolerations: []
+affinity: {}
