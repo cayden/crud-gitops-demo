@@ -10,7 +10,7 @@ backend:
   image:
     repository: crud-backend
     tag: v1
-  replicas: 2
+  replicas: 3
   port: 8080
   env:
     dbName: crud
