@@ -1,0 +1,18 @@
+# 统一换行符，避免 Windows 下提交的 CRLF 破坏 shell 脚本
+* text=auto
+
+*.sh        text eol=lf
+Makefile    text eol=lf
+Dockerfile  text eol=lf
+*.tpl       text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.go        text eol=lf
+*.js        text eol=lf
+*.vue       text eol=lf
+*.css       text eol=lf
+*.html      text eol=lf
+*.json      text eol=lf
+*.md        text eol=lf
+*.mod       text eol=lf
+*.sum       text eol=lf
